@@ -1,0 +1,163 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Presenter</title>
+<style>
+  :root { color-scheme: dark; --bg: #1b1d22; --panel: #25282f; --line: #3a3e48; --pv: #f0a030; --live: #e5484d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: #e6e6e6; font: 14px "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header b { font-size: 16px; }
+  #status { flex: 1; color: #9aa; }
+  #status.bad, #saveErr { color: var(--live); }
+  #saveErr { max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px 1fr 380px; }
+  section { min-height: 0; overflow-y: auto; padding: 10px 12px; border-right: 1px solid var(--line); }
+  h2 { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #9aa; }
+  h2:first-child { margin-top: 0; }
+  button, input, select, textarea { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; }
+  button { cursor: pointer; }
+  button:hover { border-color: #778; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 4px; cursor: pointer; }
+  li:hover { background: var(--panel); }
+  li.sel { background: #334; }
+  li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li button { padding: 0 6px; }
+  ul:empty::after, #slides:empty::after { content: attr(data-empty); color: #778; font-style: italic; }
+  #filter { width: 100%; margin-bottom: 6px; }
+  #itemTitle { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #slides { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; align-items: start; }
+  .slide { height: 130px; overflow: hidden; padding: 8px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; white-space: pre-wrap; text-align: center; cursor: pointer; user-select: none; }
+  .slide img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  form.deck textarea, form.deck .bgrow { display: none; }
+  .slide.pv { border-color: var(--pv); }
+  .slide.live { border-color: var(--live); box-shadow: inset 0 0 0 2px var(--live); }
+  iframe { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 30vh; border: 2px solid var(--line); background: #000; pointer-events: none; }
+  #pv { border-color: var(--pv); }
+  #lv { border-color: var(--live); }
+  #go { width: 100%; margin: 8px 0 0; padding: 10px; font-weight: 600; background: #7a2226; border-color: var(--live); }
+  .modes { display: flex; gap: 6px; margin-top: 8px; }
+  .modes button { flex: 1; }
+  .modes button.on { background: var(--live); }
+  .hint { margin-top: 12px; color: #778; font-size: 12px; }
+  dialog { width: 560px; max-width: 95vw; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 8px; }
+  dialog::backdrop { background: rgba(0, 0, 0, .6); }
+  form { display: grid; grid-template-columns: 150px 1fr; gap: 8px 10px; align-items: center; }
+  form h3, form textarea, form .row { grid-column: 1 / -1; margin: 0; }
+  form h3 { margin-top: 8px; font-size: 13px; color: #9aa; }
+  form textarea { height: 300px; resize: vertical; }
+  form .row { display: flex; gap: 6px; }
+  form .row > * { flex: 1; min-width: 0; }
+  form .row > button, form .row > input[type=color], form .row > input[type=checkbox] { flex: none; }
+  form .end { justify-content: flex-end; margin-top: 8px; }
+  form .end > * { flex: none; }
+</style>
+
+<header>
+  <b>Presenter</b>
+  <span id="status"></span>
+  <span id="saveErr"></span>
+  <button id="openSettings">Settings</button>
+</header>
+
+<main>
+  <section>
+    <h2>Library <span><button id="newSong">+ Song</button> <button id="newDeck">+ PowerPoint</button></span></h2>
+    <input id="filter" placeholder="Search">
+    <ul id="songs" data-empty="Nothing yet. Add a song or a PowerPoint."></ul>
+    <h2>Schedule</h2>
+    <ul id="schedule" data-empty="Add songs with the + button."></ul>
+  </section>
+
+  <section>
+    <h2 id="itemTitle">Slides</h2>
+    <div id="slides" data-empty="Select an item to see its slides."></div>
+  </section>
+
+  <section>
+    <h2>Preview <small>only you see this</small></h2>
+    <iframe id="pv"></iframe>
+    <button id="go">Go Live &nbsp;(Enter)</button>
+    <h2>Live <small>what the output shows</small></h2>
+    <iframe id="lv"></iframe>
+    <div class="modes">
+      <button data-mode="black">Black (B)</button>
+      <button data-mode="clear">Clear (C)</button>
+      <button data-mode="logo">Logo (L)</button>
+    </div>
+    <p class="hint">Click a slide to preview it, Enter or Space to send it live, arrows to move the preview. Double-click sends a slide live at once. Clear cancels Black or Logo; pressed on a normal slide it hides the text and keeps the background.</p>
+  </section>
+</main>
+
+<!-- Background controls, cloned into both dialogs -->
+<template id="bgTpl">
+  <label class="bgrow">Background</label>
+  <div class="row bgrow">
+    <select name="bgType">
+      <option value="default">Use default</option>
+      <option value="color">Colour</option>
+      <option value="image">Image</option>
+      <option value="video">Video (muted, looped)</option>
+    </select>
+    <input name="bgColor" type="color">
+    <select name="bgFit">
+      <option value="cover">Fill</option>
+      <option value="contain">Fit</option>
+      <option value="fill">Stretch</option>
+    </select>
+  </div>
+  <label class="bgrow">Background file</label>
+  <div class="row bgrow"><input name="bgUrl" readonly placeholder="none"><button type="button" name="bgPick">Browse</button></div>
+</template>
+
+<dialog id="editor">
+  <form method="dialog">
+    <label>Title</label><input name="songTitle" autofocus>
+    <textarea name="songText" placeholder="Lyrics. Leave a blank line between slides."></textarea>
+    <div class="bgSlot" hidden></div>
+    <div class="row end">
+      <button type="button" name="del" style="margin-right:auto">Delete song</button>
+      <button value="save">Save</button>
+      <button value="cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings">
+  <form method="dialog">
+    <h3>Output (projector or LED wall)</h3>
+    <label>Output monitor</label><select name="display"></select>
+    <label>Custom region (pixels)</label>
+    <div class="row">
+      <input name="rx" type="number" placeholder="X"><input name="ry" type="number" placeholder="Y">
+      <input name="rw" type="number" min="0" placeholder="Width"><input name="rh" type="number" min="0" placeholder="Height">
+    </div>
+    <label></label><small>Leave width and height empty to use the whole monitor.</small>
+
+    <h3>Text</h3>
+    <label>Font</label><input name="font" list="fonts">
+    <datalist id="fonts"><option>Segoe UI<option>Arial<option>Calibri<option>Georgia<option>Impact<option>Tahoma<option>Times New Roman<option>Verdana</datalist>
+    <label>Largest size</label><input name="size" type="number" min="10" max="400">
+    <label>Colour</label><div class="row"><input name="color" type="color"></div>
+    <label>Outline (0 = none)</label><div class="row"><input name="outline" type="number" min="0" max="20" step="0.5"><input name="outlineColor" type="color"></div>
+    <label>Shadow</label><div class="row"><input name="shadow" type="checkbox"></div>
+    <label>Alignment</label>
+    <div class="row">
+      <select name="align"><option value="left">Left<option value="center">Centre<option value="right">Right</select>
+      <select name="valign"><option value="top">Top<option value="middle">Middle<option value="bottom">Bottom</select>
+    </div>
+
+    <h3>Default background</h3>
+    <div class="bgSlot" hidden></div>
+
+    <h3>Other</h3>
+    <label>Logo image</label>
+    <div class="row"><input name="logo" readonly placeholder="none"><button type="button" name="logoPick">Browse</button><button type="button" name="logoClear">Clear</button></div>
+    <label>Fade (milliseconds)</label><input name="ms" type="number" min="0" max="5000" step="50">
+
+    <div class="row end"><button value="save">Save</button><button value="cancel">Cancel</button></div>
+  </form>
+</dialog>
+
+<script src="lib.js"></script>
+<script src="control.js"></script>

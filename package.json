@@ -1,0 +1,17 @@
+{
+  "name": "presenter",
+  "productName": "Presenter",
+  "version": "0.1.0",
+  "description": "Worship presentation software: slides to a projector or LED wall",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node test.js",
+    "package": "electron-packager . Presenter --out dist --overwrite --ignore=test.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^33.0.0"
+  }
+}

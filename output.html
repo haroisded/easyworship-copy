@@ -11,15 +11,18 @@
   /* Margin is 5% of the stage's shorter side. Plain 5% is always of the width, which on a very wide LED wall is taller than the wall. */
   .text { display: flex; box-sizing: border-box; padding: 5cqmin; }
   .text > div { width: 100%; white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.2; paint-order: stroke fill; }
-  #logo, #black { background: #000; opacity: 0; }
+  /* One black backdrop for both Black and Logo: switching between them must not fade two covers at once, or the slide shows through. */
+  #logo, #black { opacity: 0; }
+  #black { background: #000; }
   #logo img { width: 100%; height: 100%; object-fit: contain; }
-  .black #black, .logo #logo { opacity: 1; }
-  .clear #texts { opacity: 0; }
+  .black #black, .logo #black, .logo #logo { opacity: 1; }
+  /* Text is hidden in every mode but normal, so it cannot flash while a cover fades out or in. */
+  .black #texts, .clear #texts, .logo #texts { opacity: 0; }
 </style>
 <div id="stage" class="black">
   <div id="bgs"></div>
   <div id="texts"></div>
-  <div id="logo"><img hidden></div>
   <div id="black"></div>
+  <div id="logo"><img hidden></div>
 </div>
 <script src="output.js"></script>

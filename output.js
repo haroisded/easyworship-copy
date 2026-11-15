@@ -3,6 +3,8 @@
 // state = { text, style, bg, logo, mode: normal|black|clear|logo, ms, stage: {w, h} }
 const $ = id => document.getElementById(id);
 const stage = $('stage');
+const logoImg = $('logo').firstElementChild;
+logoImg.onerror = () => { logoImg.hidden = true; }; // missing file: plain black, never the broken-picture icon
 const keys = {};
 let last;
 
@@ -87,9 +89,11 @@ function render(s) {
   swap('bgs', JSON.stringify(s.bg), () => buildBg(s.bg), s.ms, false);
   swap('texts', JSON.stringify([s.text, s.style, s.stage]), () => buildText(s.text, s.style), s.ms, true,
     txt => fitText(txt, s.style.size * s.stage.h / 1080));
-  const logo = $('logo').firstElementChild;
-  logo.hidden = !s.logo;
-  if (s.logo && logo.src !== s.logo) logo.src = s.logo;
+  // Only on a change, so a logo that failed to load stays hidden on later renders.
+  if (logoImg.getAttribute('src') !== (s.logo || null)) {
+    logoImg.hidden = !s.logo;
+    if (s.logo) logoImg.src = s.logo; else logoImg.removeAttribute('src');
+  }
   stage.className = s.mode;
 }
 

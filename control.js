@@ -43,8 +43,7 @@ function goLive() {
 }
 
 function setMode(m) {
-  // Clear means "back to the slide": it cancels Black/Logo; only from the normal slide does it hide the text.
-  mode = mode === m || (m === 'clear' && mode !== 'normal') ? 'normal' : m;
+  mode = mode === m ? 'normal' : m;
   sendLive();
 }
 

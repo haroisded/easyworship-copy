@@ -8,10 +8,16 @@
   "scripts": {
     "start": "electron .",
     "test": "node test.js",
-    "package": "electron-packager . Presenter --out dist --overwrite --ignore=test.js"
+    "package": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.presenter.app",
+    "productName": "Presenter",
+    "files": ["*.js", "*.html", "!test.js"],
+    "win": { "target": "nsis" }
   },
   "devDependencies": {
-    "@electron/packager": "^18.3.6",
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^26.18.0"
   }
 }

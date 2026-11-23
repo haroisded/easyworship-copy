@@ -1,7 +1,7 @@
 {
   "name": "presenter",
   "productName": "Presenter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Worship presentation software: slides to a projector or LED wall",
   "main": "main.js",
   "private": true,
@@ -14,7 +14,8 @@
     "appId": "com.presenter.app",
     "productName": "Presenter",
     "files": ["*.js", "*.html", "!test.js"],
-    "win": { "target": "nsis" }
+    "win": { "target": "nsis" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
   },
   "devDependencies": {
     "electron": "^33.0.0",
